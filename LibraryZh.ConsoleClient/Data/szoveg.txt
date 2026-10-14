@@ -1,0 +1,60 @@
+DbContext öröklés => LibraryDbContext : DbContext
+Ezen osztályon belül a DbSet-ek megadása => Book, Loan
+Konstruktorba => Database.EnsureCreated();
+override OnConfiguring => bele: optionsBuilder.UseInMemoryDatabase(„db”)
+LibraryZH.Repository-ra dupla klikk, és Microsoft.EntityFrameworkCore.Proxies hozzáadás
+override OnModelCreating
+A Repository Project alá létrehozunk egy public LibraryRepository osztályt
+Itt létrehozzuk: private readonly LibraryDbContext _db;
+A konstruktorban várunk egy LibraryDbContext típusú db-t, amit átadunk a _db-nek
+Ez alá létrehozunk a megadott itemekkel (Book, Loan) ilyeneket: public IQueryable<Book> ReadAllBooks() {return _db.Books;}
+Json importálás: public void ImportJson(string filePath)
+var lines = File.ReadAllText(filePath);
+var json = JsonSerializer.Deserialize<List<Book>>(lines);
+_db.Books.AddRange(json ?? throw new Exception(„json file is empty”));
+_db.SaveChanges();
+HA A LINQ FELADAT EZT ÍRJA: „anonim típus publikus visszatérési típusként nem használható.”: A Models project alá csinálj egy LekérdezésEredmények „osztályt”, amibe olyan „record”-okat csinálj, amilyeneket a LINQ feladatok megkövetelnek. Pl.: public record LoanedBook(string Title, string BorrowerName);    Ezeket akkor kell használni, ha a LINQ lekérdezéseknél több Modellből (Books, Loans) is kell adatot kinyerni.
+
+A LOGIC projectben eleje:
+private readonly LibraryRepository repository;
+public LibraryService(LibraryRepository repository) { this.repository = repository; }
+Ezután a LINQ lekérdezések mind IEnumerable<VisszatérésiÉrték> típusú.
+
+// 3) A három legtöbbször kölcsönzött könyv, cím és kölcsönzésszám visszaadásával
+public IEnumerable<MostLoanedBooks> task3()
+{
+    return repository.ReadAllBooks()
+        .OrderBy(x => x.Loans.Count)
+        .Take(3)
+        .Select(x => new MostLoanedBooks(x.Title, x.Loans.Count))
+        .ToList();
+}
+
+Konzol:
+Példányosítás: DbContext -> Repository -> Logic
+var context = new LibraryDbContext(); 
+var repository = new LibraryRepository(context); 
+var service = new LibraryService(repository);
+
+repository.ImportJson("Data/books.json");
+
+Console.WriteLine("1. feladat\n");
+
+foreach (var x in service.task1())
+{
+    Console.WriteLine($"{x.Title} | {x.PublishedYear}");
+}
+
+Console.WriteLine("\n2. feladat\n");
+
+foreach (var x in service.task2())
+{
+    Console.WriteLine($"{x.Title} | {x.BorrowerName}");
+}
+
+Console.WriteLine("\n3. feladat\n");
+
+foreach(var item in service.task3())
+{
+    Console.WriteLine($"{item.Title} | {item.Loans_number}");
+}

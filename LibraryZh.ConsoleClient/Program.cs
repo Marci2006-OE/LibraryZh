@@ -28,7 +28,7 @@ internal class Program
 
         foreach (var x in service.task2())
         {
-            Console.WriteLine($"{x.Title} | {x.BorrowerName}");
+            Console.WriteLine($"{x.Title} | {x.BorrowerName}"); 
         }
 
         Console.WriteLine("\n3. feladat\n");
